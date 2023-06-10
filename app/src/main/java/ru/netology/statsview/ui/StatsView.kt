@@ -87,7 +87,6 @@ class StatsView @JvmOverloads constructor(
     }
 
 
-
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         radius = min(w, h) / 2F - lineWith
         center = PointF(w / 2F, h / 2F)
@@ -104,23 +103,19 @@ class StatsView @JvmOverloads constructor(
             return
         }
         var startAngle = -90F
-        data.forEachIndexed { indext, datum ->
-            val angle = datum * 3.6F
             percentages.forEachIndexed { index, percentage ->
                 val angle = percentage * 3.6F // 360 / 100 = 3.6
                 paint.color = colors.getOrElse(index) { generateRandomColor() }
                 canvas.drawArc(oval, startAngle, angle, false, paint)
                 startAngle += angle
             }
-            canvas.drawCircle(center.x + 5F, center.y - radius , dotRadius, dotPaint)
+            canvas.drawCircle(center.x + 5F, center.y - radius, dotRadius, dotPaint)
             canvas.drawText(
                 "%.2f%%".format(100F),
                 center.x,
                 center.y + textPaint.textSize / 4,
                 textPaint
             )
-            startAngle += angle
-        }
     }
 
     private fun generateRandomColor() = Random.nextInt(
