@@ -2,18 +2,18 @@ package ru.netology.statsview.ui
 
 import android.content.Context
 import android.graphics.Canvas
+
 import android.graphics.Paint
-import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.RectF
+
 import android.util.AttributeSet
 import android.view.View
+
 import androidx.core.content.withStyledAttributes
 import ru.netology.statsview.R
 import ru.netology.statsview.utils.AndroidUtils
-import kotlin.math.cos
 import kotlin.math.min
-import kotlin.math.sin
 import kotlin.random.Random
 
 class StatsView @JvmOverloads constructor(
@@ -27,6 +27,7 @@ class StatsView @JvmOverloads constructor(
     defStyleAttr,
     defStyleRes,
 ) {
+    private val dotRadius = 20F
     private var textSize = AndroidUtils.dp(context, 20).toFloat()
     private var lineWith = AndroidUtils.dp(context, 5)
     private var colors = emptyList<Int>()
@@ -79,6 +80,14 @@ class StatsView @JvmOverloads constructor(
         textAlign = Paint.Align.CENTER
     }
 
+    private val dotPaint = Paint(
+        Paint.ANTI_ALIAS_FLAG
+    ).apply {
+        colors = listOf(color, generateRandomColor())
+    }
+
+
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         radius = min(w, h) / 2F - lineWith
         center = PointF(w / 2F, h / 2F)
@@ -95,44 +104,23 @@ class StatsView @JvmOverloads constructor(
             return
         }
         var startAngle = -90F
-      data.forEachIndexed { indext, datum ->
-          val angle = datum * 3.6F
-          paint.color = colors.getOrElse(indext) { generateRandomColor() }
-          canvas.drawArc(oval, startAngle, angle, false, paint)
-         canvas.drawText(
-             "%.2f%%".format(100F),
-             center.x,
-             center.y + textPaint.textSize / 4,
-             textPaint
-         )
-          startAngle += angle
-      }
-
-
-
-        percentages.forEachIndexed { index, percentage ->
-            val angle = percentage * 3.6F // 360 / 100 = 3.6
-            paint.color = colors.getOrElse(index) { generateRandomColor() }
-            canvas.drawArc(oval, startAngle, angle, false, paint)
-
-            // рассчитываем координаты текста
-            val textX = center.x + (radius + lineWith) * cos(Math.toRadians((startAngle + angle / 2).toDouble())).toFloat()
-            val textY = center.y + (radius + lineWith) * sin(Math.toRadians((startAngle + angle / 2).toDouble())).toFloat()
+        data.forEachIndexed { indext, datum ->
+            val angle = datum * 3.6F
+            percentages.forEachIndexed { index, percentage ->
+                val angle = percentage * 3.6F // 360 / 100 = 3.6
+                paint.color = colors.getOrElse(index) { generateRandomColor() }
+                canvas.drawArc(oval, startAngle, angle, false, paint)
+                startAngle += angle
+            }
+            canvas.drawCircle(center.x + 5F, center.y - radius , dotRadius, dotPaint)
             canvas.drawText(
-                "%.2f%%".format(percentage),
-                textX,
-                textY + textPaint.textSize / 4,
+                "%.2f%%".format(100F),
+                center.x,
+                center.y + textPaint.textSize / 4,
                 textPaint
             )
             startAngle += angle
         }
-
-       // canvas.drawText(
-       //     "%.2f%%".format(data.sum() * 100),
-       //     center.x,
-       //     center.y + textPaint.textSize / 4,
-       //     textPaint
-       // )
     }
 
     private fun generateRandomColor() = Random.nextInt(
