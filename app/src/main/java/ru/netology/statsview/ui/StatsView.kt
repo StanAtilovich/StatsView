@@ -1,19 +1,21 @@
 package ru.netology.statsview.ui
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 
 import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.RectF
-
 import android.util.AttributeSet
 import android.view.View
-
+import android.view.animation.LinearInterpolator
 import androidx.core.content.withStyledAttributes
 import ru.netology.statsview.R
 import ru.netology.statsview.utils.AndroidUtils
+
 import kotlin.math.min
+
 import kotlin.random.Random
 
 class StatsView @JvmOverloads constructor(
@@ -27,7 +29,6 @@ class StatsView @JvmOverloads constructor(
     defStyleAttr,
     defStyleRes,
 ) {
-    private val dotRadius = 20F
     private var textSize = AndroidUtils.dp(context, 20).toFloat()
     private var lineWith = AndroidUtils.dp(context, 5)
     private var colors = emptyList<Int>()
@@ -45,12 +46,15 @@ class StatsView @JvmOverloads constructor(
         }
     }
 
+    private var progress = 0F
+    private var valueAnimator: ValueAnimator? = null
     var data: List<Float> = emptyList()
         set(value) {
             field = value
             recalculatePercentages()
-            invalidate()
+            update()// invalidate()//
         }
+
 
     private var percentages: List<Float> = emptyList()
 
@@ -66,10 +70,10 @@ class StatsView @JvmOverloads constructor(
     private val paint = Paint(
         Paint.ANTI_ALIAS_FLAG
     ).apply {
-        strokeWidth = lineWith.toFloat()
         style = Paint.Style.STROKE
-        strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        strokeWidth = lineWith.toFloat()
     }
 
     private val textPaint = Paint(
@@ -80,10 +84,21 @@ class StatsView @JvmOverloads constructor(
         textAlign = Paint.Align.CENTER
     }
 
-    private val dotPaint = Paint(
-        Paint.ANTI_ALIAS_FLAG
-    ).apply {
-        colors = listOf(color, generateRandomColor())
+    private fun update() {
+        valueAnimator?.let {
+            it.removeAllUpdateListeners()
+            it.cancel()
+        }
+        progress = 0F
+        valueAnimator = ValueAnimator.ofFloat(0F, 1F).apply {
+            addUpdateListener {
+                progress = it.animatedValue as Float
+                invalidate()
+            }
+            duration = 5000
+            interpolator = LinearInterpolator()
+            start()
+        }
     }
 
 
@@ -102,21 +117,23 @@ class StatsView @JvmOverloads constructor(
         if (data.isEmpty()) {
             return
         }
-        var startAngle = -90F
-            percentages.forEachIndexed { index, percentage ->
-                val angle = percentage * 3.6F // 360 / 100 = 3.6
-                paint.color = colors.getOrElse(index) { generateRandomColor() }
-                canvas.drawArc(oval, startAngle, angle, false, paint)
-                startAngle += angle
-            }
-            canvas.drawCircle(center.x + 5F, center.y - radius, dotRadius, dotPaint)
+        var startAngle = -90F + progress * 360
+        percentages.forEachIndexed { index, percentage ->
+            val angle = percentage * 3.6F
+
+            canvas.drawArc(oval, startAngle + progress* 360, angle* progress, false, paint)
+            paint.color = colors.getOrElse(index) { generateRandomColor() }
+
+            startAngle += angle
             canvas.drawText(
-                "%.2f%%".format(100F),
+                "%.2f%%".format(progress * 100F),
                 center.x,
                 center.y + textPaint.textSize / 4,
                 textPaint
             )
+        }
     }
+
 
     private fun generateRandomColor() = Random.nextInt(
         0xFF000000.toInt(), 0xFFFFFFFF.toInt()
